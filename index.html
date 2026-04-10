@@ -978,19 +978,6 @@ function renderWinConditions(conditions) {
   const container = document.getElementById('win-conditions-container');
   if (!container) return;
 
-  const segments = {};
-  conditions.forEach(cond => {
-    if (!segments[cond.segment]) {
-      segments[cond.segment] = {
-        segment,
-        segment_label: cond.segment_label,
-        segment_icon: cond.segment_icon,
-        segment_icon_color: cond.segment_icon_color,
-        items: cond.items
-      };
-    }
-  });
-
   const sorted = conditions.sort((a, b) => a.sort_order - b.sort_order);
   const uniqueSegments = Array.from(new Map(sorted.map(item => [item.segment, item])).values());
 
@@ -1044,23 +1031,17 @@ function renderFlowMap(flowData) {
   container.innerHTML = html;
 }
 
-function renderInsights(meta, containerId) {
+function renderInsights(insightCards, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container || !insightCards || insightCards.length === 0) return;
 
-  const insightText = meta.insight_text || '';
-  const parts = insightText.split('|').map(p => p.trim());
-
-  const insightTypes = ['budget', 'players', 'policy'];
-  container.innerHTML = parts.map((text, i) => {
-    const type = insightTypes[i % 3];
-    return `
-      <div class="insight-card ${type}">
-        <div class="insight-heading">${['Budget Milestone', 'Record Venture Defense Funding', 'NDAA 2026: Commercial First'][i % 3]}</div>
-        <div class="insight-body">${text}</div>
-      </div>
-    `;
-  }).join('');
+  const sorted = insightCards.sort((a, b) => a.sort_order - b.sort_order);
+  container.innerHTML = sorted.map(card => `
+    <div class="insight-card ${card.card_type}">
+      <div class="insight-heading">${card.heading}</div>
+      <div class="insight-body">${card.body}</div>
+    </div>
+  `).join('');
 }
 
 function initCharts(chartDataRows) {
@@ -1168,7 +1149,7 @@ async function loadDashboard() {
   const loadingOverlay = document.getElementById('loading-overlay');
 
   try {
-    const [kpis, chartData, contractors, policyDrivers, techCards, winConditions, flowMap, meta] = await Promise.all([
+    const [kpis, chartData, contractors, policyDrivers, techCards, winConditions, flowMap, meta, insightCards] = await Promise.all([
       supaFetch('kpis', '?order=sort_order'),
       supaFetch('chart_data', '?order=sort_order'),
       supaFetch('contractors', '?order=sort_order'),
@@ -1176,7 +1157,8 @@ async function loadDashboard() {
       supaFetch('tech_cards', '?order=sort_order'),
       supaFetch('win_conditions', '?order=sort_order'),
       supaFetch('flow_map', '?order=sort_order'),
-      supaFetch('dashboard_meta')
+      supaFetch('dashboard_meta'),
+      supaFetch('insight_cards', '?order=sort_order')
     ]);
 
     // Update header
@@ -1211,9 +1193,9 @@ async function loadDashboard() {
     renderFlowMap(flowMap);
 
     // Render insights
-    renderInsights(metaMap, 'insight-container');
-    renderInsights(metaMap, 'win-insight-container');
-    renderInsights(metaMap, 'tech-insight-container');
+    renderInsights(insightCards, 'insight-container');
+    renderInsights(insightCards, 'win-insight-container');
+    renderInsights(insightCards, 'tech-insight-container');
 
     // Init charts
     storedChartData = chartData;
@@ -1227,7 +1209,11 @@ async function loadDashboard() {
 
   } catch (err) {
     console.error('Failed to load dashboard:', err);
-    loadingOverlay.innerHTML = 'Error loading dashboard. Please refresh.';
+    loadingOverlay.innerHTML = `<div style="color:var(--color-error);text-align:center;padding:2rem;">
+      <p style="font-weight:600;margin-bottom:0.5rem;">Error loading dashboard</p>
+      <p style="font-size:var(--text-xs);color:var(--color-text-muted);">${err.message}</p>
+      <p style="font-size:var(--text-xs);margin-top:0.5rem;">Check browser console for details. Try refreshing.</p>
+    </div>`;
   }
 }
 
