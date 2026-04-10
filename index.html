@@ -632,6 +632,46 @@ table { border-collapse: collapse; width: 100%; }
 }
 .tooltip-wrap:hover .tooltip-text { opacity: 1; }
 
+/* ====== OPPORTUNITY FILTERS ====== */
+.opp-filter-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-interactive);
+}
+.opp-filter-btn:hover { border-color: var(--color-primary); color: var(--color-text); }
+.opp-filter-btn.active {
+  background: var(--color-primary-highlight);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.opp-deadline-soon { color: var(--color-error); font-weight: 600; }
+.opp-deadline-mid  { color: var(--color-warning); }
+.opp-deadline-far  { color: var(--color-success); }
+.opp-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.opp-type-badge.solicitation { background: var(--color-primary-highlight); color: var(--color-primary); }
+.opp-type-badge.presolicitation { background: var(--color-warning-highlight); color: var(--color-warning); }
+.opp-type-badge.combined { background: var(--color-success-highlight); color: var(--color-success); }
+.opp-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: var(--text-xs);
+}
+.opp-link:hover { text-decoration: underline; }
+
 /* ====== SECTION FADE IN ====== */
 @supports (animation-timeline: scroll()) {
   .fade-in {
@@ -702,6 +742,13 @@ table { border-collapse: collapse; width: 100%; }
   <button class="nav-item" data-view="techstack" onclick="switchView('techstack', this)">
     <i data-lucide="cpu" width="16" height="16"></i>
     Tech Stack
+  </button>
+
+  <div class="nav-divider"></div>
+  <p class="sidebar-section-label">Live Intel</p>
+  <button class="nav-item" data-view="opportunities" onclick="switchView('opportunities', this)">
+    <i data-lucide="radar" width="16" height="16"></i>
+    SAM.gov Opps
   </button>
 </nav>
 
@@ -854,6 +901,27 @@ table { border-collapse: collapse; width: 100%; }
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- === VIEW: SAM.GOV OPPORTUNITIES === -->
+  <section class="view" id="view-opportunities">
+    <div class="page-header">
+      <h1 class="page-title">SAM.gov Opportunities</h1>
+      <p class="page-subtitle">Live DoD procurement opportunities from SAM.gov. Auto-synced daily.</p>
+    </div>
+
+    <div id="kpi-grid-opportunities" class="kpi-grid"></div>
+
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-6);">
+      <button class="opp-filter-btn active" data-filter="all" onclick="filterOpps('all', this)">All</button>
+      <button class="opp-filter-btn" data-filter="Solicitation" onclick="filterOpps('Solicitation', this)">Solicitations</button>
+      <button class="opp-filter-btn" data-filter="Presolicitation" onclick="filterOpps('Presolicitation', this)">Pre-Solicitations</button>
+      <button class="opp-filter-btn" data-filter="Combined Synopsis/Solicitation" onclick="filterOpps('Combined Synopsis/Solicitation', this)">Combined Synopsis</button>
+    </div>
+
+    <div id="opp-table-container" class="data-table-wrap"></div>
+
+    <div id="opp-insight-container" class="insight-row" style="margin-top:var(--space-6);"></div>
   </section>
 
 </main>
@@ -1044,6 +1112,113 @@ function renderInsights(insightCards, containerId) {
   `).join('');
 }
 
+// ====== SAM.GOV OPPORTUNITIES ======
+let allOpportunities = [];
+
+function renderOpportunities(opps) {
+  const container = document.getElementById('opp-table-container');
+  if (!container) return;
+
+  const now = new Date();
+  const sorted = opps.sort((a, b) => new Date(a.response_deadline) - new Date(b.response_deadline));
+
+  const rows = sorted.map(opp => {
+    const deadline = opp.response_deadline ? new Date(opp.response_deadline) : null;
+    const daysLeft = deadline ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+    let deadlineClass = 'opp-deadline-far';
+    let deadlineText = 'N/A';
+    if (deadline) {
+      deadlineText = deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (daysLeft !== null) {
+        if (daysLeft < 0) { deadlineClass = 'opp-deadline-soon'; deadlineText += ' (Expired)'; }
+        else if (daysLeft <= 7) { deadlineClass = 'opp-deadline-soon'; deadlineText += ` (${daysLeft}d)`; }
+        else if (daysLeft <= 30) { deadlineClass = 'opp-deadline-mid'; deadlineText += ` (${daysLeft}d)`; }
+        else { deadlineText += ` (${daysLeft}d)`; }
+      }
+    }
+
+    let typeClass = 'solicitation';
+    if (opp.notice_type === 'Presolicitation') typeClass = 'presolicitation';
+    else if (opp.notice_type === 'Combined Synopsis/Solicitation') typeClass = 'combined';
+
+    const link = opp.link ? `<a class="opp-link" href="${opp.link}" target="_blank" rel="noopener">View</a>` : '-';
+    const naics = opp.naics_code || '-';
+    const setAside = opp.set_aside || 'Full & Open';
+
+    return `<tr>
+      <td style="max-width:300px;"><strong>${opp.title}</strong></td>
+      <td><span class="opp-type-badge ${typeClass}">${opp.notice_type}</span></td>
+      <td class="${deadlineClass}">${deadlineText}</td>
+      <td style="font-family:var(--font-mono);font-size:var(--text-xs);">${naics}</td>
+      <td style="font-size:var(--text-xs);">${setAside}</td>
+      <td>${link}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="table-header">
+      <span class="table-title">Active DoD Opportunities</span>
+      <span class="badge-pill blue">${opps.length} results</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Deadline</th>
+          <th>NAICS</th>
+          <th>Set-Aside</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+  `;
+}
+
+function renderOppKPIs(opps) {
+  const container = document.getElementById('kpi-grid-opportunities');
+  if (!container) return;
+
+  const now = new Date();
+  const total = opps.length;
+  const closingSoon = opps.filter(o => {
+    if (!o.response_deadline) return false;
+    const d = Math.ceil((new Date(o.response_deadline) - now) / (1000*60*60*24));
+    return d >= 0 && d <= 7;
+  }).length;
+  const solicitations = opps.filter(o => o.notice_type === 'Solicitation').length;
+  const preSol = opps.filter(o => o.notice_type === 'Presolicitation').length;
+
+  const kpis = [
+    { label: 'Total Opportunities', value: total.toString(), delta: 'Live from SAM.gov', color: 'var(--color-primary)' },
+    { label: 'Closing ≤ 7 Days', value: closingSoon.toString(), delta: 'Urgent deadlines', color: 'var(--color-error)' },
+    { label: 'Active Solicitations', value: solicitations.toString(), delta: 'Open for bids', color: 'var(--color-success)' },
+    { label: 'Pre-Solicitations', value: preSol.toString(), delta: 'Upcoming pipeline', color: 'var(--color-warning)' }
+  ];
+
+  container.innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-delta neutral">
+        <i data-lucide="radio" width="12" height="12"></i>
+        ${k.delta}
+      </div>
+      <div class="kpi-accent" style="background:${k.color};"></div>
+    </div>
+  `).join('');
+}
+
+function filterOpps(type, btn) {
+  document.querySelectorAll('.opp-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = type === 'all' ? allOpportunities : allOpportunities.filter(o => o.notice_type === type);
+  renderOpportunities(filtered);
+}
+
 function initCharts(chartDataRows) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const grid = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
@@ -1151,7 +1326,7 @@ async function loadDashboard() {
   const loadingOverlay = document.getElementById('loading-overlay');
 
   try {
-    const [kpis, chartData, contractors, policyDrivers, techCards, winConditions, flowMap, meta, insightCards] = await Promise.all([
+    const [kpis, chartData, contractors, policyDrivers, techCards, winConditions, flowMap, meta, insightCards, samOpps] = await Promise.all([
       supaFetch('kpis', '?order=sort_order'),
       supaFetch('chart_data', '?order=sort_order'),
       supaFetch('contractors', '?order=sort_order'),
@@ -1160,7 +1335,8 @@ async function loadDashboard() {
       supaFetch('win_conditions', '?order=sort_order'),
       supaFetch('flow_map', '?order=sort_order'),
       supaFetch('dashboard_meta'),
-      supaFetch('insight_cards', '?order=sort_order')
+      supaFetch('insight_cards', '?order=sort_order'),
+      supaFetch('sam_opportunities', '?order=response_deadline')
     ]);
 
     // Update header
@@ -1198,6 +1374,11 @@ async function loadDashboard() {
     renderInsights(insightCards, 'insight-container');
     renderInsights(insightCards, 'win-insight-container');
     renderInsights(insightCards, 'tech-insight-container');
+
+    // Render SAM.gov opportunities
+    allOpportunities = samOpps || [];
+    renderOppKPIs(allOpportunities);
+    renderOpportunities(allOpportunities);
 
     // Init charts
     storedChartData = chartData;
