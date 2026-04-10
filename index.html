@@ -1128,6 +1128,8 @@ function initCharts(chartDataRows) {
     }
 
     if (tooltipLabels && row.chart_id === 'cmmcChart') {
+      config.options.plugins = config.options.plugins || {};
+      config.options.plugins.tooltip = config.options.plugins.tooltip || {};
       config.options.plugins.tooltip.callbacks = {
         label: ctx => tooltipLabels[ctx.dataIndex] || ''
       };
