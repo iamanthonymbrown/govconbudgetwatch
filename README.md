@@ -1,2 +1,2 @@
 # govconbudgetwatch
-Dashboard for tracking the aggregate budget flow of US spending with gov cons
+Dashboard for tracking the aggregate budget flow of US spending with Aerospace & Defense companies
