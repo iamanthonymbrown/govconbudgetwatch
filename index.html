@@ -1033,7 +1033,7 @@ table { border-collapse: collapse; width: 100%; }
   <section class="view" id="view-opportunities">
     <div class="page-header">
       <h1 class="page-title">SAM.gov Opportunities</h1>
-      <p class="page-subtitle">Live DoD procurement intel — curated A&D + IT/Cyber defaults, or search SAM.gov in real time.</p>
+      <p class="page-subtitle">DoD procurement intel from SAM.gov — synced daily across 18 A&D and IT/Cyber NAICS codes. Search and filter instantly.</p>
     </div>
 
     <div id="kpi-grid-opportunities" class="kpi-grid"></div>
@@ -1052,14 +1052,13 @@ table { border-collapse: collapse; width: 100%; }
         <label>Set-Aside</label>
         <select id="opp-setaside">
           <option value="">All Set-Asides</option>
-          <option value="SBA">Total Small Business</option>
-          <option value="SBP">Partial Small Business</option>
-          <option value="8A">8(a)</option>
-          <option value="8AN">8(a) Sole Source</option>
-          <option value="HZC">HUBZone</option>
-          <option value="SDVOSBC">Service-Disabled Veteran</option>
-          <option value="WOSB">Women-Owned SB</option>
-          <option value="VSA">Veteran Set-Aside</option>
+          <option value="Total Small Business">Total Small Business</option>
+          <option value="Partial Small Business">Partial Small Business</option>
+          <option value="8(a)">8(a)</option>
+          <option value="HUBZone">HUBZone</option>
+          <option value="Service-Disabled">Service-Disabled Veteran</option>
+          <option value="Women-Owned">Women-Owned SB</option>
+          <option value="Veteran">Veteran Set-Aside</option>
         </select>
       </div>
       <div class="opp-search-field">
@@ -1072,7 +1071,7 @@ table { border-collapse: collapse; width: 100%; }
       </div>
       <div class="opp-search-actions">
         <button class="opp-btn opp-btn-primary" id="opp-search-btn" onclick="runLiveSearch()">
-          <i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search SAM.gov
+          <i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search
         </button>
         <button class="opp-btn opp-btn-secondary" onclick="resetToDefaults()">Reset</button>
       </div>
@@ -1085,6 +1084,9 @@ table { border-collapse: collapse; width: 100%; }
       <button class="opp-chip" onclick="filterOpps('Presolicitation', this)">Pre-Solicitations</button>
       <button class="opp-chip" onclick="filterOpps('Combined Synopsis/Solicitation', this)">Combined Synopsis</button>
     </div>
+
+    <!-- Narrative Summary -->
+    <div id="opp-narrative" class="insight-row" style="margin-bottom:var(--space-6);"></div>
 
     <!-- Results header -->
     <div class="opp-results-header">
@@ -1283,6 +1285,65 @@ function renderInsights(insightCards, containerId) {
   `).join('');
 }
 
+function renderDynamicOverviewInsight(kpis, contractors, samOpps, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Pull key values from KPIs
+  const totalDefense = kpis.find(k => k.label && k.label.includes('Total Defense'));
+  const dodIT = kpis.find(k => k.label && k.label.includes('DoD IT'));
+  const autonomy = kpis.find(k => k.label && k.label.includes('Autonomy') && k.label.includes('Budget'));
+  const ndaa = kpis.find(k => k.label && k.label.includes('NDAA'));
+
+  // Contractor intel
+  const primes = contractors.filter(c => c.category === 'prime').sort((a,b) => (b.dod_revenue_b||0) - (a.dod_revenue_b||0));
+  const topPrime = primes[0];
+
+  // SAM.gov summary
+  const now = new Date();
+  const activeOpps = (samOpps || []).filter(o => !o.response_deadline || new Date(o.response_deadline) >= now);
+  const uniqueNaics = new Set(activeOpps.map(o => o.naics_code).filter(Boolean)).size;
+
+  const cards = [];
+
+  // Card 1: Budget context
+  if (totalDefense && ndaa) {
+    cards.push({
+      type: 'budget',
+      heading: 'Where the Money Is',
+      body: `The FY26 defense budget stands at <strong>${totalDefense.value}</strong> — ${totalDefense.delta_text}. ${dodIT ? `Of that, <strong>${dodIT.value}</strong> flows to IT and AI systems (${dodIT.delta_text}).` : ''} ${autonomy ? `Autonomy systems secured their first dedicated budget line at <strong>${autonomy.value}</strong>.` : ''} This isn't incremental growth — it's a structural shift in how DoD allocates capital.`
+    });
+  }
+
+  // Card 2: Market movers
+  if (topPrime) {
+    const primeNames = primes.slice(0, 3).map(p => p.name).join(', ');
+    cards.push({
+      type: 'players',
+      heading: 'Who\'s Winning',
+      body: `The Big 5 primes — led by <strong>${topPrime.name}</strong> at $${topPrime.dod_revenue_b}B in DoD revenue — still dominate, but the game is shifting. Neoprimes are moving fast on AI, autonomy, and space. The contractors who thrive in FY27 will be the ones bridging legacy platforms with next-gen tech stacks.`
+    });
+  }
+
+  // Card 3: Live pipeline connection
+  if (activeOpps.length > 0) {
+    cards.push({
+      type: 'policy',
+      heading: 'Live Pipeline Intel',
+      body: `Right now, <strong>${activeOpps.length} active DoD opportunities</strong> across ${uniqueNaics} NAICS codes are open for pursuit — sourced directly from SAM.gov. This dashboard syncs daily so you never miss a deadline. Switch to the <strong>SAM.gov Opps</strong> tab to search by keyword, NAICS, or set-aside.`
+    });
+  }
+
+  if (cards.length > 0) {
+    container.innerHTML = cards.map(card => `
+      <div class="insight-card ${card.type}">
+        <div class="insight-heading">${card.heading}</div>
+        <div class="insight-body">${card.body}</div>
+      </div>
+    `).join('');
+  }
+}
+
 // ====== SAM.GOV OPPORTUNITIES ======
 let cachedOpportunities = [];  // from daily sync (Supabase)
 let displayedOpportunities = []; // currently shown (cached or live)
@@ -1392,6 +1453,90 @@ function renderOppKPIs(opps) {
   `).join('');
 }
 
+// NAICS code labels for narrative
+const NAICS_LABELS = {
+  '336411': 'Aircraft Manufacturing', '336412': 'Aircraft Engines', '336413': 'Aircraft Parts',
+  '336414': 'Missiles & Space Vehicles', '336415': 'Missile Propulsion', '336419': 'Missile Parts',
+  '336611': 'Shipbuilding', '336992': 'Military Vehicles', '334511': 'Navigation & Guidance',
+  '334290': 'Communications Equipment', '541511': 'Custom Programming', '541512': 'Computer Systems Design',
+  '541519': 'IT Services', '541330': 'Engineering Services', '541715': 'R&D Sciences',
+  '518210': 'Data Hosting', '541690': 'Technical Consulting', '561210': 'Facilities Support',
+  '236220': 'Commercial Construction',
+};
+
+function renderOppNarrative(opps) {
+  const container = document.getElementById('opp-narrative');
+  if (!container || opps.length === 0) { if (container) container.innerHTML = ''; return; }
+
+  const now = new Date();
+
+  // Deadline analysis
+  const active = opps.filter(o => !o.response_deadline || new Date(o.response_deadline) >= now);
+  const closing7d = opps.filter(o => {
+    if (!o.response_deadline) return false;
+    const d = Math.ceil((new Date(o.response_deadline) - now) / (1000*60*60*24));
+    return d >= 0 && d <= 7;
+  });
+  const closing30d = opps.filter(o => {
+    if (!o.response_deadline) return false;
+    const d = Math.ceil((new Date(o.response_deadline) - now) / (1000*60*60*24));
+    return d >= 0 && d <= 30;
+  });
+
+  // Top NAICS
+  const naicsCounts = {};
+  opps.forEach(o => {
+    if (o.naics_code) naicsCounts[o.naics_code] = (naicsCounts[o.naics_code] || 0) + 1;
+  });
+  const topNaics = Object.entries(naicsCounts).sort((a,b) => b[1] - a[1]).slice(0, 3);
+
+  // Set-aside analysis
+  const withSetAside = opps.filter(o => o.set_aside && !o.set_aside.includes('No Set'));
+  const setAsidePct = opps.length > 0 ? Math.round((withSetAside.length / opps.length) * 100) : 0;
+
+  // Notice type breakdown
+  const typeCounts = {};
+  opps.forEach(o => { typeCounts[o.notice_type] = (typeCounts[o.notice_type] || 0) + 1; });
+
+  // Build narrative cards
+  const cards = [];
+
+  // Card 1: Pipeline snapshot
+  const urgentPhrase = closing7d.length > 0
+    ? `<strong>${closing7d.length} close within 7 days</strong> — these need immediate attention.`
+    : 'No immediate deadlines this week.';
+  cards.push({
+    type: 'budget',
+    heading: 'Pipeline Snapshot',
+    body: `Tracking <strong>${active.length} active DoD opportunities</strong> across ${Object.keys(naicsCounts).length} NAICS codes. ${closing30d.length} are closing within 30 days, and ${urgentPhrase} ${typeCounts['Presolicitation'] ? `${typeCounts['Presolicitation']} pre-solicitations signal upcoming pipeline.` : ''}`
+  });
+
+  // Card 2: Where the action is
+  const topNaicsText = topNaics.map(([code, count]) => {
+    const label = NAICS_LABELS[code] || code;
+    return `<strong>${label}</strong> (${count})`;
+  }).join(', ');
+  cards.push({
+    type: 'players',
+    heading: 'Where the Action Is',
+    body: `Highest concentration of opportunities: ${topNaicsText}. ${topNaics[0] && topNaics[0][0].startsWith('54') ? 'IT and professional services are dominating the pipeline — consistent with DoD\'s digital transformation push.' : topNaics[0] && topNaics[0][0].startsWith('33') ? 'Hardware and manufacturing leads — traditional A&D programs are actively procuring.' : 'A healthy mix of IT and traditional A&D procurement.'}`
+  });
+
+  // Card 3: Small business opportunity
+  cards.push({
+    type: 'policy',
+    heading: 'Small Business Landscape',
+    body: `<strong>${setAsidePct}% of opportunities</strong> carry a small business set-aside (${withSetAside.length} of ${opps.length}). ${setAsidePct >= 40 ? 'Well above the federal 23% goal — DoD is actively pushing small business participation in these categories.' : setAsidePct >= 23 ? 'Tracking close to the federal small business contracting goal of 23%.' : 'Below the 23% federal target — most opportunities in these NAICS codes are full and open competition.'}`
+  });
+
+  container.innerHTML = cards.map(card => `
+    <div class="insight-card ${card.type}">
+      <div class="insight-heading">${card.heading}</div>
+      <div class="insight-body">${card.body}</div>
+    </div>
+  `).join('');
+}
+
 function updateResultsHeader(count, totalAvailable) {
   const label = document.getElementById('opp-results-label');
   const badge = document.getElementById('opp-source-badge');
@@ -1401,7 +1546,7 @@ function updateResultsHeader(count, totalAvailable) {
   }
   if (badge) {
     badge.className = isLiveMode ? 'opp-source-badge live' : 'opp-source-badge cached';
-    badge.textContent = isLiveMode ? 'Live Search' : 'Curated Daily';
+    badge.textContent = isLiveMode ? 'Filtered Results' : 'All Opportunities';
   }
 }
 
@@ -1409,6 +1554,7 @@ function applyFilter() {
   const base = isLiveMode ? displayedOpportunities : cachedOpportunities;
   const filtered = currentFilter === 'all' ? base : base.filter(o => o.notice_type === currentFilter);
   renderOpportunities(filtered);
+  renderOppNarrative(filtered);
   updateResultsHeader(filtered.length);
 }
 
@@ -1426,7 +1572,6 @@ async function runLiveSearch() {
   const daysBack = parseInt(document.getElementById('opp-daysback').value);
 
   if (!keywords && !naics && !setAside) {
-    // No search criteria — just show defaults
     resetToDefaults();
     return;
   }
@@ -1435,34 +1580,56 @@ async function runLiveSearch() {
   const container = document.getElementById('opp-table-container');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Searching...';
-  container.innerHTML = '<div class="opp-loading"><span class="spinner"></span> Querying SAM.gov in real time...</div>';
+  container.innerHTML = '<div class="opp-loading"><span class="spinner"></span> Searching opportunities...</div>';
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/search-sam`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords, naics, setAside, daysBack, limit: 100 })
-    });
-    const data = await res.json();
+    // Build Supabase REST query filters
+    const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    let params = `?posted_date=gte.${cutoff}&order=response_deadline`;
 
-    if (!data.success) throw new Error(data.error || 'Search failed');
+    if (keywords) {
+      // Use ilike for case-insensitive title search; support multiple terms with OR
+      const terms = keywords.split(/[,\s]+/).filter(Boolean);
+      if (terms.length === 1) {
+        params += `&title=ilike.*${encodeURIComponent(terms[0])}*`;
+      } else {
+        // Multiple keywords: match any using Supabase OR syntax
+        const orClauses = terms.map(t => `title.ilike.*${encodeURIComponent(t)}*`).join(',');
+        params += `&or=(${orClauses})`;
+      }
+    }
+    if (naics) {
+      // Support comma-separated NAICS: match any
+      const codes = naics.split(/[,\s]+/).filter(Boolean);
+      if (codes.length === 1) {
+        params += `&naics_code=eq.${encodeURIComponent(codes[0])}`;
+      } else {
+        params += `&naics_code=in.(${codes.map(c => encodeURIComponent(c)).join(',')})`;
+      }
+    }
+    if (setAside) {
+      params += `&set_aside=ilike.*${encodeURIComponent(setAside)}*`;
+    }
+
+    const results = await supaFetch('sam_opportunities', params);
 
     isLiveMode = true;
-    displayedOpportunities = data.opportunities || [];
+    displayedOpportunities = results || [];
     currentFilter = 'all';
     document.querySelectorAll('.opp-chip').forEach(b => b.classList.remove('active'));
     document.querySelector('.opp-chip').classList.add('active');
 
     renderOppKPIs(displayedOpportunities);
     renderOpportunities(displayedOpportunities);
-    updateResultsHeader(displayedOpportunities.length, data.total_available);
+    renderOppNarrative(displayedOpportunities);
+    updateResultsHeader(displayedOpportunities.length);
     lucide.createIcons();
 
   } catch (err) {
-    container.innerHTML = `<div class="opp-loading" style="color:var(--color-error);">Search failed: ${err.message}. Try again or reset to defaults.</div>`;
+    container.innerHTML = `<div class="opp-loading" style="color:var(--color-error);">Search failed: ${err.message}. Try adjusting your filters or reset to defaults.</div>`;
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search SAM.gov';
+    btn.innerHTML = '<i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search';
     lucide.createIcons();
   }
 }
@@ -1480,6 +1647,7 @@ function resetToDefaults() {
 
   renderOppKPIs(cachedOpportunities);
   renderOpportunities(cachedOpportunities);
+  renderOppNarrative(cachedOpportunities);
   updateResultsHeader(cachedOpportunities.length);
   lucide.createIcons();
 }
@@ -1643,8 +1811,8 @@ async function loadDashboard() {
     // Render flow map
     renderFlowMap(flowMap);
 
-    // Render insights
-    renderInsights(insightCards, 'insight-container');
+    // Render insights — dynamic for overview, static for deep dives
+    renderDynamicOverviewInsight(kpis, contractors, samOpps, 'insight-container');
     renderInsights(insightCards, 'win-insight-container');
     renderInsights(insightCards, 'tech-insight-container');
 
@@ -1653,6 +1821,7 @@ async function loadDashboard() {
     displayedOpportunities = cachedOpportunities;
     renderOppKPIs(cachedOpportunities);
     renderOpportunities(cachedOpportunities);
+    renderOppNarrative(cachedOpportunities);
     updateResultsHeader(cachedOpportunities.length);
 
     // Init charts
