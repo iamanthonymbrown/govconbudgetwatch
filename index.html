@@ -632,24 +632,142 @@ table { border-collapse: collapse; width: 100%; }
 }
 .tooltip-wrap:hover .tooltip-text { opacity: 1; }
 
-/* ====== OPPORTUNITY FILTERS ====== */
-.opp-filter-btn {
-  padding: var(--space-2) var(--space-4);
+/* ====== OPPORTUNITY SEARCH & FILTERS ====== */
+.opp-search-bar {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+.opp-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 160px;
+}
+.opp-search-field.wide { flex: 2; min-width: 220px; }
+.opp-search-field label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+.opp-search-field input,
+.opp-search-field select {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color var(--transition-interactive);
+}
+.opp-search-field input:focus,
+.opp-search-field select:focus {
+  border-color: var(--color-primary);
+}
+.opp-search-field input::placeholder { color: var(--color-text-faint); }
+.opp-search-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+.opp-btn {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-interactive);
+  white-space: nowrap;
+  height: 34px;
+}
+.opp-btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+.opp-btn-primary:hover { background: var(--color-primary-hover); }
+.opp-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.opp-btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+.opp-btn-secondary:hover { border-color: var(--color-primary); color: var(--color-text); }
+.opp-filter-chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.opp-chip {
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: var(--text-xs);
+  font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-interactive);
 }
-.opp-filter-btn:hover { border-color: var(--color-primary); color: var(--color-text); }
-.opp-filter-btn.active {
+.opp-chip:hover { border-color: var(--color-primary); color: var(--color-text); }
+.opp-chip.active {
   background: var(--color-primary-highlight);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+.opp-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+.opp-results-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.opp-results-label strong { color: var(--color-text); }
+.opp-source-badge {
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.opp-source-badge.cached { background: var(--color-success-highlight); color: var(--color-success); }
+.opp-source-badge.live { background: var(--color-primary-highlight); color: var(--color-primary); }
+.opp-loading {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.opp-loading .spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .opp-deadline-soon { color: var(--color-error); font-weight: 600; }
 .opp-deadline-mid  { color: var(--color-warning); }
 .opp-deadline-far  { color: var(--color-success); }
@@ -671,6 +789,14 @@ table { border-collapse: collapse; width: 100%; }
   font-size: var(--text-xs);
 }
 .opp-link:hover { text-decoration: underline; }
+.opp-naics-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-offset);
+  color: var(--color-text-muted);
+}
 
 /* ====== SECTION FADE IN ====== */
 @supports (animation-timeline: scroll()) {
@@ -907,21 +1033,66 @@ table { border-collapse: collapse; width: 100%; }
   <section class="view" id="view-opportunities">
     <div class="page-header">
       <h1 class="page-title">SAM.gov Opportunities</h1>
-      <p class="page-subtitle">Live DoD procurement opportunities from SAM.gov. Auto-synced daily.</p>
+      <p class="page-subtitle">Live DoD procurement intel — curated A&D + IT/Cyber defaults, or search SAM.gov in real time.</p>
     </div>
 
     <div id="kpi-grid-opportunities" class="kpi-grid"></div>
 
-    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-6);">
-      <button class="opp-filter-btn active" data-filter="all" onclick="filterOpps('all', this)">All</button>
-      <button class="opp-filter-btn" data-filter="Solicitation" onclick="filterOpps('Solicitation', this)">Solicitations</button>
-      <button class="opp-filter-btn" data-filter="Presolicitation" onclick="filterOpps('Presolicitation', this)">Pre-Solicitations</button>
-      <button class="opp-filter-btn" data-filter="Combined Synopsis/Solicitation" onclick="filterOpps('Combined Synopsis/Solicitation', this)">Combined Synopsis</button>
+    <!-- Search Bar -->
+    <div class="opp-search-bar">
+      <div class="opp-search-field wide">
+        <label>Keywords</label>
+        <input type="text" id="opp-keywords" placeholder="e.g. unmanned, cybersecurity, C5ISR, logistics...">
+      </div>
+      <div class="opp-search-field">
+        <label>NAICS Code</label>
+        <input type="text" id="opp-naics" placeholder="e.g. 541512">
+      </div>
+      <div class="opp-search-field">
+        <label>Set-Aside</label>
+        <select id="opp-setaside">
+          <option value="">All Set-Asides</option>
+          <option value="SBA">Total Small Business</option>
+          <option value="SBP">Partial Small Business</option>
+          <option value="8A">8(a)</option>
+          <option value="8AN">8(a) Sole Source</option>
+          <option value="HZC">HUBZone</option>
+          <option value="SDVOSBC">Service-Disabled Veteran</option>
+          <option value="WOSB">Women-Owned SB</option>
+          <option value="VSA">Veteran Set-Aside</option>
+        </select>
+      </div>
+      <div class="opp-search-field">
+        <label>Posted Within</label>
+        <select id="opp-daysback">
+          <option value="30">Last 30 days</option>
+          <option value="60" selected>Last 60 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </div>
+      <div class="opp-search-actions">
+        <button class="opp-btn opp-btn-primary" id="opp-search-btn" onclick="runLiveSearch()">
+          <i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search SAM.gov
+        </button>
+        <button class="opp-btn opp-btn-secondary" onclick="resetToDefaults()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Type filter chips -->
+    <div class="opp-filter-chips">
+      <button class="opp-chip active" onclick="filterOpps('all', this)">All Types</button>
+      <button class="opp-chip" onclick="filterOpps('Solicitation', this)">Solicitations</button>
+      <button class="opp-chip" onclick="filterOpps('Presolicitation', this)">Pre-Solicitations</button>
+      <button class="opp-chip" onclick="filterOpps('Combined Synopsis/Solicitation', this)">Combined Synopsis</button>
+    </div>
+
+    <!-- Results header -->
+    <div class="opp-results-header">
+      <span class="opp-results-label" id="opp-results-label"><strong>0</strong> opportunities</span>
+      <span class="opp-source-badge cached" id="opp-source-badge">Curated Daily</span>
     </div>
 
     <div id="opp-table-container" class="data-table-wrap"></div>
-
-    <div id="opp-insight-container" class="insight-row" style="margin-top:var(--space-6);"></div>
   </section>
 
 </main>
@@ -1113,14 +1284,26 @@ function renderInsights(insightCards, containerId) {
 }
 
 // ====== SAM.GOV OPPORTUNITIES ======
-let allOpportunities = [];
+let cachedOpportunities = [];  // from daily sync (Supabase)
+let displayedOpportunities = []; // currently shown (cached or live)
+let currentFilter = 'all';
+let isLiveMode = false;
 
 function renderOpportunities(opps) {
   const container = document.getElementById('opp-table-container');
   if (!container) return;
 
+  if (opps.length === 0) {
+    container.innerHTML = `<div class="opp-loading">No opportunities found matching your criteria. Try broadening your search.</div>`;
+    return;
+  }
+
   const now = new Date();
-  const sorted = opps.sort((a, b) => new Date(a.response_deadline) - new Date(b.response_deadline));
+  const sorted = [...opps].sort((a, b) => {
+    const da = a.response_deadline ? new Date(a.response_deadline) : new Date('2099-01-01');
+    const db = b.response_deadline ? new Date(b.response_deadline) : new Date('2099-01-01');
+    return da - db;
+  });
 
   const rows = sorted.map(opp => {
     const deadline = opp.response_deadline ? new Date(opp.response_deadline) : null;
@@ -1141,35 +1324,32 @@ function renderOpportunities(opps) {
     if (opp.notice_type === 'Presolicitation') typeClass = 'presolicitation';
     else if (opp.notice_type === 'Combined Synopsis/Solicitation') typeClass = 'combined';
 
-    const link = opp.link ? `<a class="opp-link" href="${opp.link}" target="_blank" rel="noopener">View</a>` : '-';
-    const naics = opp.naics_code || '-';
+    const link = opp.link ? `<a class="opp-link" href="${opp.link}" target="_blank" rel="noopener">View ↗</a>` : '-';
+    const naics = opp.naics_code ? `<span class="opp-naics-tag">${opp.naics_code}</span>` : '-';
     const setAside = opp.set_aside || 'Full & Open';
+    const location = opp.place_of_performance || '';
 
     return `<tr>
-      <td style="max-width:300px;"><strong>${opp.title}</strong></td>
+      <td style="max-width:320px;"><strong>${opp.title}</strong>${location ? `<br><span style="font-size:0.7rem;color:var(--color-text-muted);">${location}</span>` : ''}</td>
       <td><span class="opp-type-badge ${typeClass}">${opp.notice_type}</span></td>
-      <td class="${deadlineClass}">${deadlineText}</td>
-      <td style="font-family:var(--font-mono);font-size:var(--text-xs);">${naics}</td>
-      <td style="font-size:var(--text-xs);">${setAside}</td>
+      <td class="${deadlineClass}" style="white-space:nowrap;">${deadlineText}</td>
+      <td>${naics}</td>
+      <td style="font-size:var(--text-xs);max-width:140px;">${setAside}</td>
       <td>${link}</td>
     </tr>`;
   }).join('');
 
   container.innerHTML = `
-    <div class="table-header">
-      <span class="table-title">Active DoD Opportunities</span>
-      <span class="badge-pill blue">${opps.length} results</span>
-    </div>
     <div style="overflow-x:auto;">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Title</th>
+          <th>Opportunity</th>
           <th>Type</th>
           <th>Deadline</th>
           <th>NAICS</th>
           <th>Set-Aside</th>
-          <th>Link</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1189,14 +1369,14 @@ function renderOppKPIs(opps) {
     const d = Math.ceil((new Date(o.response_deadline) - now) / (1000*60*60*24));
     return d >= 0 && d <= 7;
   }).length;
-  const solicitations = opps.filter(o => o.notice_type === 'Solicitation').length;
-  const preSol = opps.filter(o => o.notice_type === 'Presolicitation').length;
+  const uniqueNaics = new Set(opps.map(o => o.naics_code).filter(Boolean)).size;
+  const withSetAside = opps.filter(o => o.set_aside && !o.set_aside.includes('No Set')).length;
 
   const kpis = [
-    { label: 'Total Opportunities', value: total.toString(), delta: 'Live from SAM.gov', color: 'var(--color-primary)' },
-    { label: 'Closing ≤ 7 Days', value: closingSoon.toString(), delta: 'Urgent deadlines', color: 'var(--color-error)' },
-    { label: 'Active Solicitations', value: solicitations.toString(), delta: 'Open for bids', color: 'var(--color-success)' },
-    { label: 'Pre-Solicitations', value: preSol.toString(), delta: 'Upcoming pipeline', color: 'var(--color-warning)' }
+    { label: 'Opportunities', value: total.toString(), delta: isLiveMode ? 'Live SAM.gov search' : 'Curated A&D + IT/Cyber', color: 'var(--color-primary)' },
+    { label: 'Closing ≤ 7 Days', value: closingSoon.toString(), delta: 'Action required', color: 'var(--color-error)' },
+    { label: 'NAICS Codes', value: uniqueNaics.toString(), delta: 'Industry categories', color: 'var(--color-success)' },
+    { label: 'Set-Aside Eligible', value: withSetAside.toString(), delta: 'Small business prefs', color: 'var(--color-warning)' }
   ];
 
   container.innerHTML = kpis.map(k => `
@@ -1212,12 +1392,105 @@ function renderOppKPIs(opps) {
   `).join('');
 }
 
-function filterOpps(type, btn) {
-  document.querySelectorAll('.opp-filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const filtered = type === 'all' ? allOpportunities : allOpportunities.filter(o => o.notice_type === type);
-  renderOpportunities(filtered);
+function updateResultsHeader(count, totalAvailable) {
+  const label = document.getElementById('opp-results-label');
+  const badge = document.getElementById('opp-source-badge');
+  if (label) {
+    const extra = totalAvailable && totalAvailable > count ? ` of ${totalAvailable.toLocaleString()} total` : '';
+    label.innerHTML = `<strong>${count}</strong> opportunities${extra}`;
+  }
+  if (badge) {
+    badge.className = isLiveMode ? 'opp-source-badge live' : 'opp-source-badge cached';
+    badge.textContent = isLiveMode ? 'Live Search' : 'Curated Daily';
+  }
 }
+
+function applyFilter() {
+  const base = isLiveMode ? displayedOpportunities : cachedOpportunities;
+  const filtered = currentFilter === 'all' ? base : base.filter(o => o.notice_type === currentFilter);
+  renderOpportunities(filtered);
+  updateResultsHeader(filtered.length);
+}
+
+function filterOpps(type, btn) {
+  document.querySelectorAll('.opp-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = type;
+  applyFilter();
+}
+
+async function runLiveSearch() {
+  const keywords = document.getElementById('opp-keywords').value.trim();
+  const naics = document.getElementById('opp-naics').value.trim();
+  const setAside = document.getElementById('opp-setaside').value;
+  const daysBack = parseInt(document.getElementById('opp-daysback').value);
+
+  if (!keywords && !naics && !setAside) {
+    // No search criteria — just show defaults
+    resetToDefaults();
+    return;
+  }
+
+  const btn = document.getElementById('opp-search-btn');
+  const container = document.getElementById('opp-table-container');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Searching...';
+  container.innerHTML = '<div class="opp-loading"><span class="spinner"></span> Querying SAM.gov in real time...</div>';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/search-sam`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords, naics, setAside, daysBack, limit: 100 })
+    });
+    const data = await res.json();
+
+    if (!data.success) throw new Error(data.error || 'Search failed');
+
+    isLiveMode = true;
+    displayedOpportunities = data.opportunities || [];
+    currentFilter = 'all';
+    document.querySelectorAll('.opp-chip').forEach(b => b.classList.remove('active'));
+    document.querySelector('.opp-chip').classList.add('active');
+
+    renderOppKPIs(displayedOpportunities);
+    renderOpportunities(displayedOpportunities);
+    updateResultsHeader(displayedOpportunities.length, data.total_available);
+    lucide.createIcons();
+
+  } catch (err) {
+    container.innerHTML = `<div class="opp-loading" style="color:var(--color-error);">Search failed: ${err.message}. Try again or reset to defaults.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="search" width="13" height="13" style="vertical-align:-2px;margin-right:4px;"></i>Search SAM.gov';
+    lucide.createIcons();
+  }
+}
+
+function resetToDefaults() {
+  document.getElementById('opp-keywords').value = '';
+  document.getElementById('opp-naics').value = '';
+  document.getElementById('opp-setaside').value = '';
+  document.getElementById('opp-daysback').value = '60';
+
+  isLiveMode = false;
+  currentFilter = 'all';
+  document.querySelectorAll('.opp-chip').forEach(b => b.classList.remove('active'));
+  document.querySelector('.opp-chip').classList.add('active');
+
+  renderOppKPIs(cachedOpportunities);
+  renderOpportunities(cachedOpportunities);
+  updateResultsHeader(cachedOpportunities.length);
+  lucide.createIcons();
+}
+
+// Allow Enter key to trigger search
+document.addEventListener('DOMContentLoaded', () => {
+  ['opp-keywords', 'opp-naics'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') runLiveSearch(); });
+  });
+});
 
 function initCharts(chartDataRows) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1375,10 +1648,12 @@ async function loadDashboard() {
     renderInsights(insightCards, 'win-insight-container');
     renderInsights(insightCards, 'tech-insight-container');
 
-    // Render SAM.gov opportunities
-    allOpportunities = samOpps || [];
-    renderOppKPIs(allOpportunities);
-    renderOpportunities(allOpportunities);
+    // Render SAM.gov opportunities (curated defaults)
+    cachedOpportunities = samOpps || [];
+    displayedOpportunities = cachedOpportunities;
+    renderOppKPIs(cachedOpportunities);
+    renderOpportunities(cachedOpportunities);
+    updateResultsHeader(cachedOpportunities.length);
 
     // Init charts
     storedChartData = chartData;
