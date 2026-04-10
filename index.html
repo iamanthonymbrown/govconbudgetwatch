@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 A&D Money Flow Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<style>
+/* ====== DESIGN TOKENS ====== */
+:root {
+  --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+  --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
+  --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
+
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius-sm: 0.375rem; --radius-md: 0.5rem;
+  --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-full: 9999px;
+  --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  --color-bg:             #0d1117;
+  --color-surface:        #161b22;
+  --color-surface-2:      #1c2128;
+  --color-surface-offset: #21262d;
+  --color-surface-dynamic:#2d333b;
+  --color-divider:        #30363d;
+  --color-border:         #3d444d;
+  --color-text:           #e6edf3;
+  --color-text-muted:     #8b949e;
+  --color-text-faint:     #484f58;
+  --color-text-inverse:   #0d1117;
+  --color-primary:        #58a6ff;
+  --color-primary-hover:  #79b8ff;
+  --color-primary-active: #388bfd;
+  --color-primary-highlight: #1f3555;
+  --color-success:        #3fb950;
+  --color-success-highlight: #1a3a25;
+  --color-warning:        #d29922;
+  --color-warning-highlight: #342a0e;
+  --color-error:          #f85149;
+  --color-error-highlight:#3d1a19;
+  --color-orange:         #f0883e;
+  --color-purple:         #bc8cff;
+  --color-gold:           #e3b341;
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5);
+}
+
+[data-theme="light"] {
+  --color-bg:             #f6f8fa;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #f6f8fa;
+  --color-surface-offset: #eaeef2;
+  --color-surface-dynamic:#d0d7de;
+  --color-divider:        #d8dee4;
+  --color-border:         #d0d7de;
+  --color-text:           #24292f;
+  --color-text-muted:     #57606a;
+  --color-text-faint:     #8c959f;
+  --color-text-inverse:   #ffffff;
+  --color-primary:        #0969da;
+  --color-primary-hover:  #0a3069;
+  --color-primary-active: #0550ae;
+  --color-primary-highlight: #ddf4ff;
+  --color-success:        #1a7f37;
+  --color-success-highlight: #dafbe1;
+  --color-warning:        #9a6700;
+  --color-warning-highlight: #fff8c5;
+  --color-error:          #cf222e;
+  --color-error-highlight:#ffebe9;
+  --color-orange:         #bc4c00;
+  --color-purple:         #8250df;
+  --color-gold:           #9a6700;
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 240 / 0.07);
+  --shadow-md: 0 4px 12px oklch(0.2 0.01 240 / 0.1);
+  --shadow-lg: 0 12px 32px oklch(0.2 0.01 240 / 0.14);
+}
+
+/* ====== BASE ====== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: var(--space-16); -webkit-font-smoothing: antialiased; }
+body {
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+img, svg { display: block; max-width: 100%; }
+button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+a { color: var(--color-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+table { border-collapse: collapse; width: 100%; }
+::selection { background: color-mix(in oklab, var(--color-primary) 25%, transparent); }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: var(--radius-sm); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+
+/* ====== LAYOUT ====== */
+.app-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+/* ====== HEADER ====== */
+.app-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg { color: var(--color-text-inverse); }
+.logo-name { font-size: var(--text-base); font-weight: 700; letter-spacing: -0.02em; }
+.logo-badge {
+  font-size: var(--text-xs); font-family: var(--font-mono);
+  background: var(--color-primary-highlight);
+  color: var(--color-primary);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.header-spacer { flex: 1; }
+.header-meta { font-size: var(--text-xs); color: var(--color-text-muted); font-family: var(--font-mono); }
+.header-divider { width: 1px; height: 20px; background: var(--color-border); }
+
+.theme-toggle {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  display: flex; align-items: center; justify-content: center;
+  transition: color var(--transition-interactive), background var(--transition-interactive);
+}
+.theme-toggle:hover { color: var(--color-text); background: var(--color-surface-offset); }
+
+/* ====== SIDEBAR ====== */
+.sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--space-4) 0;
+  position: sticky;
+  top: 57px;
+  height: calc(100dvh - 57px);
+  overflow-y: auto;
+}
+
+.sidebar-section-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-faint);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 0;
+  transition: color var(--transition-interactive), background var(--transition-interactive);
+  width: 100%;
+  text-align: left;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { color: var(--color-text); background: var(--color-surface-offset); }
+.nav-item.active {
+  color: var(--color-primary);
+  background: var(--color-primary-highlight);
+  border-left-color: var(--color-primary);
+  font-weight: 600;
+}
+.nav-item i { opacity: 0.7; flex-shrink: 0; }
+.nav-item.active i { opacity: 1; }
+
+.nav-divider { height: 1px; background: var(--color-divider); margin: var(--space-3) var(--space-4); }
+
+/* ====== MAIN CONTENT ====== */
+.main-content {
+  padding: var(--space-6) var(--space-8);
+  overflow-y: auto;
+  max-width: 1200px;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ====== PAGE HEADER ====== */
+.page-header {
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.page-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+.page-subtitle { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ====== KPI CARDS ====== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.kpi-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--transition-interactive), transform var(--transition-interactive);
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.kpi-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+.kpi-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+.kpi-delta {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.kpi-delta.up { color: var(--color-success); }
+.kpi-delta.warn { color: var(--color-warning); }
+.kpi-delta.primary { color: var(--color-primary); }
+.kpi-accent {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 60px; height: 60px;
+  border-radius: var(--radius-lg) 0 var(--radius-lg) 0;
+  opacity: 0.08;
+}
+
+/* ====== CHART CARDS ====== */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.chart-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.chart-title .badge {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  background: var(--color-surface-offset);
+  color: var(--color-text-muted);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+}
+.chart-container { position: relative; }
+.chart-container canvas { border-radius: var(--radius-md); }
+
+/* ====== FLOW MAP ====== */
+.flow-map {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.flow-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-6);
+  display: flex; align-items: center; gap: var(--space-2);
+}
+.flow-container {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+.flow-col { display: flex; flex-direction: column; gap: var(--space-3); }
+.flow-col-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+}
+.flow-col-label.budget { background: color-mix(in oklab, var(--color-gold) 15%, transparent); color: var(--color-gold); }
+.flow-col-label.players { background: color-mix(in oklab, var(--color-primary) 15%, transparent); color: var(--color-primary); }
+.flow-col-label.wins { background: color-mix(in oklab, var(--color-success) 15%, transparent); color: var(--color-success); }
+
+.flow-node {
+  background: var(--color-surface-offset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+  text-align: center;
+  transition: border-color var(--transition-interactive), transform var(--transition-interactive);
+  cursor: default;
+}
+.flow-node:hover { border-color: var(--color-primary); transform: scale(1.02); }
+.flow-node .node-amount {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+.flow-node .node-label { color: var(--color-text-muted); line-height: 1.3; }
+.flow-node.highlight-gold { border-color: var(--color-gold); }
+.flow-node.highlight-blue { border-color: var(--color-primary); }
+.flow-node.highlight-green { border-color: var(--color-success); }
+.flow-node.highlight-purple { border-color: var(--color-purple); }
+.flow-node.highlight-orange { border-color: var(--color-orange); }
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-faint);
+  padding-top: var(--space-10);
+}
+
+/* ====== TABLE ====== */
+.data-table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.table-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.table-title { font-size: var(--text-sm); font-weight: 600; }
+.data-table { width: 100%; }
+.data-table th {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  padding: var(--space-3) var(--space-5);
+  text-align: left;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--color-surface-offset); }
+
+.badge-pill {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--text-xs); font-weight: 600;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+.badge-pill.green { background: var(--color-success-highlight); color: var(--color-success); }
+.badge-pill.blue { background: var(--color-primary-highlight); color: var(--color-primary); }
+.badge-pill.gold { background: var(--color-warning-highlight); color: var(--color-warning); }
+.badge-pill.red { background: var(--color-error-highlight); color: var(--color-error); }
+
+/* ====== POLICY CARDS ====== */
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.policy-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.policy-card-header { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-3); }
+.policy-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--text-sm);
+}
+.policy-name { font-size: var(--text-sm); font-weight: 600; color: var(--color-text); }
+.policy-rule { font-size: var(--text-xs); color: var(--color-text-muted); }
+.policy-detail { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.5; }
+.policy-detail strong { color: var(--color-text); }
+
+/* ====== WIN CONDITIONS ====== */
+.segment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.segment-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.segment-header {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+}
+.segment-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.segment-name { font-size: var(--text-sm); font-weight: 700; }
+.segment-type { font-size: var(--text-xs); color: var(--color-text-muted); }
+.win-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+.win-item { display: flex; gap: var(--space-3); align-items: flex-start; }
+.win-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+}
+.win-text { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.5; }
+.win-text strong { color: var(--color-text); }
+
+/* ====== TECH STACK ====== */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.tech-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-interactive), transform var(--transition-interactive);
+}
+.tech-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.tech-card-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.tech-icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tech-name { font-size: var(--text-sm); font-weight: 600; }
+.tech-desc { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.5; }
+.tech-tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.tech-tag {
+  font-size: var(--text-xs);
+  background: var(--color-surface-offset);
+  color: var(--color-text-muted);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+/* ====== INSIGHT CARDS ====== */
+.insight-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.insight-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  position: relative;
+  overflow: hidden;
+}
+.insight-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+.insight-card.budget::before { background: var(--color-gold); }
+.insight-card.players::before { background: var(--color-primary); }
+.insight-card.policy::before { background: var(--color-success); }
+.insight-icon { font-size: 24px; margin-bottom: var(--space-3); }
+.insight-heading { font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-2); }
+.insight-body { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.6; }
+.insight-body strong { color: var(--color-text); }
+
+/* ====== LOADING STATE ====== */
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.loading-overlay.hidden { display: none; }
+
+/* ====== SCROLLBAR ====== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-dynamic); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ====== MOBILE ====== */
+@media (max-width: 768px) {
+  .app-layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main-content { padding: var(--space-4); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .segment-grid { grid-template-columns: 1fr; }
+  .insight-row { grid-template-columns: 1fr; }
+  .flow-container { grid-template-columns: 1fr; }
+  .flow-arrow { display: none; }
+}
+
+/* ====== SHIMMER ANIMATION for number updates ====== */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.kpi-value { animation: countUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ====== TOOLTIP ====== */
+.tooltip-wrap { position: relative; display: inline-flex; align-items: center; }
+.tooltip-text {
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface-dynamic);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition-interactive);
+  z-index: 200;
+}
+.tooltip-wrap:hover .tooltip-text { opacity: 1; }
+
+/* ====== SECTION FADE IN ====== */
+@supports (animation-timeline: scroll()) {
+  .fade-in {
+    opacity: 0;
+    animation: reveal-fade linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 80%;
+  }
+}
+@keyframes reveal-fade { to { opacity: 1; } }
+
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+<!-- ====== HEADER ====== -->
+<header class="app-header">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+      </svg>
+    </div>
+    <span class="logo-name">A&D Money Flow</span>
+    <span class="logo-badge">FY26</span>
+  </div>
+  <div class="header-spacer"></div>
+  <span class="header-meta" id="header-meta">Loading...</span>
+  <div class="header-divider"></div>
+  <span class="header-meta" id="last-updated" style="font-size: var(--text-xs); color: var(--color-text-muted);">--</span>
+  <div class="header-divider"></div>
+  <button class="theme-toggle" data-theme-toggle aria-label="Switch theme">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<!-- ====== SIDEBAR ====== -->
+<nav class="sidebar" aria-label="Main navigation">
+  <p class="sidebar-section-label">Overview</p>
+  <button class="nav-item active" data-view="overview" onclick="switchView('overview', this)">
+    <i data-lucide="layout-dashboard" width="16" height="16"></i>
+    Budget Overview
+  </button>
+  <button class="nav-item" data-view="players" onclick="switchView('players', this)">
+    <i data-lucide="users" width="16" height="16"></i>
+    Market Players
+  </button>
+
+  <div class="nav-divider"></div>
+  <p class="sidebar-section-label">Deep Dives</p>
+  <button class="nav-item" data-view="flowmap" onclick="switchView('flowmap', this)">
+    <i data-lucide="git-merge" width="16" height="16"></i>
+    Money Flow Map
+  </button>
+  <button class="nav-item" data-view="policy" onclick="switchView('policy', this)">
+    <i data-lucide="shield-check" width="16" height="16"></i>
+    Policy Drivers
+  </button>
+  <button class="nav-item" data-view="winconditions" onclick="switchView('winconditions', this)">
+    <i data-lucide="trophy" width="16" height="16"></i>
+    Win Conditions
+  </button>
+
+  <div class="nav-divider"></div>
+  <p class="sidebar-section-label">Technology</p>
+  <button class="nav-item" data-view="techstack" onclick="switchView('techstack', this)">
+    <i data-lucide="cpu" width="16" height="16"></i>
+    Tech Stack
+  </button>
+</nav>
+
+<!-- ====== MAIN ====== -->
+<main class="main-content" id="main-content">
+
+  <div class="loading-overlay" id="loading-overlay">Loading dashboard data...</div>
+
+  <!-- === VIEW: OVERVIEW === -->
+  <section class="view active" id="view-overview">
+    <div class="page-header">
+      <h1 class="page-title">FY26 Defense Budget Overview</h1>
+      <p class="page-subtitle">National defense discretionary + reconciliation spend. Data as of April 2026.</p>
+    </div>
+
+    <div id="kpi-grid-overview" class="kpi-grid"></div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">
+          Budget by Service Branch
+          <span class="badge">FY26 $961.6B request</span>
+        </div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="branchChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Top 4 Priority Spending Buckets
+          <span class="badge">Approximate allocations</span>
+        </div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="bucketChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">
+          Year-over-Year Defense Spend Growth (select programs)
+          <span class="badge">FY25 enacted → FY26 request / enacted</span>
+        </div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="programChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="insight-container" class="insight-row"></div>
+  </section>
+
+  <!-- === VIEW: PLAYERS === -->
+  <section class="view" id="view-players">
+    <div class="page-header">
+      <h1 class="page-title">Market Players</h1>
+      <p class="page-subtitle">Primes, neoprimes, and venture-backed defense tech entrants competing for FY26 dollars.</p>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Big 5 Prime DoD Revenue <span class="badge">Annual est.</span></div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="primesChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Emerging Player Valuations <span class="badge">Neoprimes & VC-backed</span></div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="neoprimesChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="primes-table-container" class="data-table-wrap"></div>
+    <div id="neoprimes-table-container" class="data-table-wrap"></div>
+  </section>
+
+  <!-- === VIEW: FLOWMAP === -->
+  <section class="view" id="view-flowmap">
+    <div class="page-header">
+      <h1 class="page-title">Money Flow Map</h1>
+      <p class="page-subtitle">How FY26 defense dollars flow through budget buckets, into prime contractors, and out to win conditions.</p>
+    </div>
+
+    <div class="flow-map">
+      <div class="flow-title">
+        <i data-lucide="git-merge" width="18" height="18"></i>
+        FY26 Defense Budget Flow
+      </div>
+      <div id="flow-map-container" class="flow-container"></div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Money Flow (Sankey Representation)</div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="flowChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- === VIEW: POLICY === -->
+  <section class="view" id="view-policy">
+    <div class="page-header">
+      <h1 class="page-title">Policy Drivers</h1>
+      <p class="page-subtitle">Key NDAA 2026 mandates and policy changes reshaping defense spending and procurement.</p>
+    </div>
+
+    <div id="kpi-grid-policy" class="kpi-grid"></div>
+
+    <div id="policy-grid-container" class="policy-grid"></div>
+  </section>
+
+  <!-- === VIEW: WIN CONDITIONS === -->
+  <section class="view" id="view-winconditions">
+    <div class="page-header">
+      <h1 class="page-title">Win Conditions</h1>
+      <p class="page-subtitle">Winning playbooks by market segment: primes, subcontractors, and venture-backed disruptors.</p>
+    </div>
+
+    <div id="win-conditions-container" class="segment-grid"></div>
+
+    <div id="win-insight-container" class="insight-row"></div>
+  </section>
+
+  <!-- === VIEW: TECHSTACK === -->
+  <section class="view" id="view-techstack">
+    <div class="page-header">
+      <h1 class="page-title">Technology Stack</h1>
+      <p class="page-subtitle">The six technologies shaping defense spending in 2026 and beyond.</p>
+    </div>
+
+    <div id="kpi-grid-techstack" class="kpi-grid"></div>
+
+    <div id="tech-grid-container" class="tech-grid"></div>
+
+    <div id="tech-insight-container" class="insight-row"></div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">CMMC Compliance Roadmap</div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="cmmcChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Competitive Landscape by Segment</div>
+        <div class="chart-container" style="height:260px;">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+// ====== SUPABASE CONFIG ======
+const SUPABASE_URL = 'https://ebceaggyxlyznjjcognq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImViY2VhZ2d5eGx5em5qamNvZ25xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MzA5MjgsImV4cCI6MjA5MTQwNjkyOH0.4irT3YDr3sdi4CyMSPHDSwRbNfqG88KP7GkIlimhQlA';
+
+// ====== SUPABASE FETCH HELPER ======
+async function supaFetch(table, params = '') {
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${table}${params}`);
+  const response = await fetch(url.toString(), {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
+    }
+  });
+  if (!response.ok) throw new Error(`Supabase error: ${response.statusText}`);
+  return response.json();
+}
+
+// ====== RENDER FUNCTIONS ======
+
+function renderKPIs(kpis, section, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const sectionKPIs = kpis.filter(k => k.section === section).sort((a, b) => a.sort_order - b.sort_order);
+  container.innerHTML = sectionKPIs.map(kpi => `
+    <div class="kpi-card">
+      <div class="kpi-label">${kpi.label}</div>
+      <div class="kpi-value">${kpi.value}</div>
+      <div class="kpi-delta ${kpi.delta_type}">
+        <i data-lucide="${kpi.delta_icon}" width="12" height="12"></i>
+        ${kpi.delta_text}
+      </div>
+      <div class="kpi-accent" style="background:${kpi.accent_color};"></div>
+    </div>
+  `).join('');
+}
+
+function renderContractorsTable(contractors, category, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const categoryContractors = contractors.filter(c => c.category === category).sort((a, b) => a.sort_order - b.sort_order);
+  const isPrime = category === 'prime';
+  const title = isPrime ? 'Prime Contractor Snapshot — Big 5' : 'Neoprimes & Emerging Players';
+
+  const rows = categoryContractors.map(c => {
+    const moneyVal = isPrime ? (c.dod_revenue_b ? `$${c.dod_revenue_b}B` : '-') : (c.valuation_b ? `$${c.valuation_b}B` : 'Public');
+    return `
+    <tr>
+      <td><strong>${c.name}</strong></td>
+      <td><span style="font-family:var(--font-mono)">${moneyVal}</span></td>
+      <td>${c.focus_area || '-'}</td>
+      <td>${c.programs || '-'}</td>
+    </tr>
+  `;}).join('');
+
+  container.innerHTML = `
+    <div class="table-header">
+      <span class="table-title">${title}</span>
+      <span class="badge-pill blue">FY26 Data</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>${isPrime ? 'DoD Revenue' : 'Valuation'}</th>
+          <th>Focus Area</th>
+          <th>Key Programs</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderPolicyCards(drivers) {
+  const container = document.getElementById('policy-grid-container');
+  if (!container) return;
+
+  const sorted = drivers.sort((a, b) => a.sort_order - b.sort_order);
+  container.innerHTML = sorted.map(policy => `
+    <div class="policy-card">
+      <div class="policy-card-header">
+        <div class="policy-icon" style="background:color-mix(in oklab, ${policy.icon_color} 15%, transparent);">
+          <i data-lucide="${policy.icon}" width="18" height="18" style="color:${policy.icon_color}"></i>
+        </div>
+        <div>
+          <div class="policy-name">${policy.title}</div>
+          <div class="policy-rule">${policy.subtitle}</div>
+        </div>
+      </div>
+      <div class="policy-detail">${policy.detail}</div>
+    </div>
+  `).join('');
+}
+
+function renderTechCards(cards) {
+  const container = document.getElementById('tech-grid-container');
+  if (!container) return;
+
+  const sorted = cards.sort((a, b) => a.sort_order - b.sort_order);
+  container.innerHTML = sorted.map(tech => `
+    <div class="tech-card">
+      <div class="tech-card-header">
+        <div class="tech-icon" style="background:color-mix(in oklab, ${tech.icon_color} 15%, transparent);">
+          <i data-lucide="${tech.icon}" width="18" height="18" style="color:${tech.icon_color}"></i>
+        </div>
+        <div class="tech-name">${tech.title}</div>
+      </div>
+      <div class="tech-desc">${tech.description}</div>
+    </div>
+  `).join('');
+}
+
+function renderWinConditions(conditions) {
+  const container = document.getElementById('win-conditions-container');
+  if (!container) return;
+
+  const segments = {};
+  conditions.forEach(cond => {
+    if (!segments[cond.segment]) {
+      segments[cond.segment] = {
+        segment,
+        segment_label: cond.segment_label,
+        segment_icon: cond.segment_icon,
+        segment_icon_color: cond.segment_icon_color,
+        items: cond.items
+      };
+    }
+  });
+
+  const sorted = conditions.sort((a, b) => a.sort_order - b.sort_order);
+  const uniqueSegments = Array.from(new Map(sorted.map(item => [item.segment, item])).values());
+
+  container.innerHTML = uniqueSegments.map(seg => `
+    <div class="segment-card">
+      <div class="segment-header">
+        <div class="segment-icon" style="background:color-mix(in oklab, ${seg.segment_icon_color} 15%, transparent);">
+          <i data-lucide="${seg.segment_icon}" width="20" height="20" style="color:${seg.segment_icon_color}"></i>
+        </div>
+        <div>
+          <div class="segment-name">${seg.segment_label}</div>
+        </div>
+      </div>
+      <ul class="win-list">
+        ${seg.items.map(item => `
+          <li class="win-item">
+            <div class="win-dot" style="background:${seg.segment_icon_color};"></div>
+            <div class="win-text"><strong>${item.bold_text}</strong> ${item.detail_text}</div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+
+function renderFlowMap(flowData) {
+  const container = document.getElementById('flow-map-container');
+  if (!container) return;
+
+  const sorted = flowData.sort((a, b) => a.sort_order - b.sort_order);
+  const columns = sorted.length;
+
+  let html = '';
+  sorted.forEach((col, idx) => {
+    html += `
+      <div class="flow-col">
+        <div class="flow-col-label ${['budget', 'players', 'wins'][idx % 3] || 'players'}">${col.title}</div>
+        ${col.items.map(item => `
+          <div class="flow-node highlight-${item.color}">
+            <span class="node-amount">${item.label}</span>
+            <span class="node-label">${item.sublabel}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    if (idx < sorted.length - 1) {
+      html += `<div class="flow-arrow">→</div>`;
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function renderInsights(meta, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const insightText = meta.insight_text || '';
+  const parts = insightText.split('|').map(p => p.trim());
+
+  const insightTypes = ['budget', 'players', 'policy'];
+  container.innerHTML = parts.map((text, i) => {
+    const type = insightTypes[i % 3];
+    return `
+      <div class="insight-card ${type}">
+        <div class="insight-heading">${['Budget Milestone', 'Record Venture Defense Funding', 'NDAA 2026: Commercial First'][i % 3]}</div>
+        <div class="insight-body">${text}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function initCharts(chartDataRows) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const grid = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tick = isDark ? '#8b949e' : '#57606a';
+  const font = "'Inter', 'Helvetica Neue', sans-serif";
+
+  Chart.defaults.font.family = font;
+  Chart.defaults.font.size = 11;
+
+  chartDataRows.forEach(row => {
+    const canvas = document.getElementById(row.chart_id);
+    if (!canvas) return;
+
+    destroyChart(row.chart_id);
+
+    const labels = row.labels || [];
+    const datasets = row.datasets || [];
+    const tooltipLabels = row.tooltip_labels || null;
+
+    const config = {
+      type: row.chart_type,
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    };
+
+    if (row.chart_type === 'doughnut') {
+      config.options.cutout = '60%';
+      config.options.plugins = config.options.plugins || {};
+      config.options.plugins.legend = {
+        position: 'right',
+        labels: { color: tick, padding: 12, font: { size: 11 }, boxWidth: 12 }
+      };
+      config.options.plugins.tooltip = config.options.plugins.tooltip || {};
+      config.options.plugins.tooltip.callbacks = { label: ctx => ` $${ctx.parsed}B` };
+      datasets.forEach(ds => {
+        ds.borderColor = isDark ? '#161b22' : '#ffffff';
+        ds.borderWidth = 3;
+        ds.hoverBorderWidth = 4;
+      });
+    } else if (row.chart_type === 'bar') {
+      config.options.plugins = config.options.plugins || {};
+      config.options.plugins.legend = { display: true, labels: { color: tick, padding: 12 } };
+      config.options.scales = {
+        x: { grid: { color: grid }, ticks: { color: tick } },
+        y: { grid: { color: grid }, ticks: { color: tick } }
+      };
+      datasets.forEach(ds => {
+        ds.borderRadius = 6;
+        ds.borderSkipped = false;
+      });
+    } else if (row.chart_type === 'line') {
+      config.options.plugins = config.options.plugins || {};
+      config.options.plugins.legend = { display: true, labels: { color: tick, padding: 12 } };
+      config.options.plugins.tooltip = config.options.plugins.tooltip || {};
+      config.options.scales = {
+        x: { grid: { color: grid }, ticks: { color: tick } },
+        y: { grid: { color: grid }, ticks: { color: tick } }
+      };
+      datasets.forEach(ds => {
+        ds.borderWidth = 2;
+        ds.fill = false;
+        ds.tension = 0.3;
+      });
+    } else if (row.chart_type === 'radar') {
+      config.options.plugins = config.options.plugins || {};
+      config.options.plugins.legend = { labels: { color: tick, padding: 16 } };
+      config.options.scales = {
+        r: {
+          beginAtZero: true,
+          grid: { color: grid },
+          ticks: { color: tick, stepSize: 1, backdropColor: 'transparent' },
+          pointLabels: { color: tick, font: { size: 11 } }
+        }
+      };
+      datasets.forEach(ds => {
+        ds.pointBorderColor = isDark ? '#161b22' : '#fff';
+        ds.pointBorderWidth = 2;
+      });
+    }
+
+    if (tooltipLabels && row.chart_id === 'cmmcChart') {
+      config.options.plugins.tooltip.callbacks = {
+        label: ctx => tooltipLabels[ctx.dataIndex] || ''
+      };
+    }
+
+    chartInstances[row.chart_id] = new Chart(canvas, config);
+  });
+}
+
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+const chartInstances = {};
+let storedChartData = [];
+
+// ====== LOAD DASHBOARD ======
+async function loadDashboard() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+
+  try {
+    const [kpis, chartData, contractors, policyDrivers, techCards, winConditions, flowMap, meta] = await Promise.all([
+      supaFetch('kpis', '?order=sort_order'),
+      supaFetch('chart_data', '?order=sort_order'),
+      supaFetch('contractors', '?order=sort_order'),
+      supaFetch('policy_drivers', '?order=sort_order'),
+      supaFetch('tech_cards', '?order=sort_order'),
+      supaFetch('win_conditions', '?order=sort_order'),
+      supaFetch('flow_map', '?order=sort_order'),
+      supaFetch('dashboard_meta')
+    ]);
+
+    // Update header
+    const overviewKPI = kpis.find(k => k.label && k.label.includes('National Defense'));
+    if (overviewKPI) {
+      document.getElementById('header-meta').textContent = overviewKPI.value;
+    }
+
+    const metaMap = {};
+    meta.forEach(m => metaMap[m.key] = m.value);
+    if (metaMap.last_updated) {
+      document.getElementById('last-updated').textContent = `Updated: ${metaMap.last_updated}`;
+    }
+
+    // Render KPIs
+    renderKPIs(kpis, 'overview', 'kpi-grid-overview');
+    renderKPIs(kpis, 'policy', 'kpi-grid-policy');
+    renderKPIs(kpis, 'techstack', 'kpi-grid-techstack');
+
+    // Render tables
+    renderContractorsTable(contractors, 'prime', 'primes-table-container');
+    renderContractorsTable(contractors, 'neoprime', 'neoprimes-table-container');
+
+    // Render policy and tech
+    renderPolicyCards(policyDrivers);
+    renderTechCards(techCards);
+
+    // Render win conditions
+    renderWinConditions(winConditions);
+
+    // Render flow map
+    renderFlowMap(flowMap);
+
+    // Render insights
+    renderInsights(metaMap, 'insight-container');
+    renderInsights(metaMap, 'win-insight-container');
+    renderInsights(metaMap, 'tech-insight-container');
+
+    // Init charts
+    storedChartData = chartData;
+    initCharts(chartData);
+
+    // Create lucide icons for dynamically inserted content
+    lucide.createIcons();
+
+    // Hide loading overlay
+    loadingOverlay.classList.add('hidden');
+
+  } catch (err) {
+    console.error('Failed to load dashboard:', err);
+    loadingOverlay.innerHTML = 'Error loading dashboard. Please refresh.';
+  }
+}
+
+// ====== THEME TOGGLE ======
+(function(){
+  const t = document.querySelector('[data-theme-toggle]');
+  const r = document.documentElement;
+  let d = r.getAttribute('data-theme') || 'dark';
+  r.setAttribute('data-theme', d);
+  if(t) {
+    t.innerHTML = d === 'dark'
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    t.addEventListener('click', () => {
+      d = d === 'dark' ? 'light' : 'dark';
+      r.setAttribute('data-theme', d);
+      t.setAttribute('aria-label', 'Switch to ' + (d === 'dark' ? 'light' : 'dark') + ' mode');
+      t.innerHTML = d === 'dark'
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      setTimeout(() => {
+        if (storedChartData.length > 0) initCharts(storedChartData);
+      }, 50);
+    });
+  }
+})();
+
+// ====== NAV ======
+function switchView(viewId, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + viewId).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(() => {
+    Object.values(chartInstances).forEach(chart => {
+      if (chart) chart.resize();
+    });
+  }, 100);
+}
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+});
+</script>
+</body>
+</html>
